@@ -1,0 +1,7 @@
+/_bin
+/_cwd
+/_build
+/vcpkg_installed
+/.vs
+/.vscode
+*.vcxproj.user

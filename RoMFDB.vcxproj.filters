@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{653cdcd0-4208-4424-8679-f017309c6dce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include\fdb">
+      <UniqueIdentifier>{add42cbb-c815-46dc-8877-6b7c3b269d32}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{5dbb55b8-7257-4ebc-8404-26d5937a32b3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\impl">
+      <UniqueIdentifier>{2e16f0fc-f88f-47f4-896b-d162fa82bd1a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\fdb\reader.hpp">
+      <Filter>include\fdb</Filter>
+    </ClInclude>
+    <ClInclude Include="include\fdb\base.hpp">
+      <Filter>include\fdb</Filter>
+    </ClInclude>
+    <ClInclude Include="src\impl\base.hpp">
+      <Filter>src\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="include\fdb\NormalFile.hpp">
+      <Filter>include\fdb</Filter>
+    </ClInclude>
+    <ClInclude Include="include\fdb\ImageFile.hpp">
+      <Filter>include\fdb</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\reader.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="include\fdb\writer.hpp">
+      <Filter>include\fdb</Filter>
+    </ClCompile>
+    <ClCompile Include="src\writer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NormalFile.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ImageFile.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="vcpkg.json" />
+  </ItemGroup>
+</Project>
