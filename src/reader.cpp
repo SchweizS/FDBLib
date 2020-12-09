@@ -4,11 +4,15 @@
 
 #include "ImageFile.hpp"
 #include "impl/base.hpp"
-
+#include <algorithm>
+#include <cctype>
 namespace fdb {
 
   std::unique_ptr<NormalFile> Reader::get(int index) const {
     const auto& fte = mFileTable[index];
+    if (fte.offset == 0) {
+      return nullptr;
+    }
     std::unique_ptr<NormalFile> res;
     if (fte.type == FileType::normal) {
       res = std::make_unique<NormalFile>();
@@ -24,6 +28,22 @@ namespace fdb {
       mPackage.seekg(fte.offset);
 
       mPackage.read((char*)&nfh, sizeof(nfh));
+      if (nfh.size_uncompressed >> 31) {
+        // check highest bit
+        // if the file is bigger than 2GB than there is something horribly wrong
+        return nullptr;
+      }
+      if (nfh.size_uncompressed == 0) {
+        return nullptr;
+      }
+      if (nfh.size_compressed > 0x10000000) {
+        return nullptr;
+      }
+
+      if (nfh.namelength > 0x200) {
+        return nullptr;
+      }
+
       mPackage.seekg(nfh.namelength, std::ios::cur);
       if (res->isImage()) {
         auto hdr = ((ImageFile*)res.get())->getHeader();
@@ -77,6 +97,13 @@ namespace fdb {
       mFileNames[i] = mNames.get() + offset;
       offset += len[i] + 1;
     }
+    for (auto f : mFileNames) {
+      std::string p = f;
+      std::replace(p.begin(), p.end(), '\\', '/');
+      p.erase(p.begin(), std::find_if(p.begin(), p.end(), [](auto c) { return !(c == '/' || c == '.'); }));
+      std::transform(p.begin(), p.end(), p.begin(), ::tolower);
+      memcpy(f, p.c_str(), p.size() + 1); // copy null terminator
+    }
     return *this;
   }
   void Reader::close() {
@@ -91,6 +118,9 @@ namespace fdb {
     const auto& fte = mFileTable[index];
     f.name = mFileNames[index];
     f.time = fte.time;
+    if (fte.offset == 0) {
+      return f;
+    } 
 
     impl::NormalFileHeader nfh;
 
