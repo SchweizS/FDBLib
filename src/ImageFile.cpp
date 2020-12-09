@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <exception>
 #include <fstream>
+#include <mutex>
 
 #include "impl/base.hpp"
 
@@ -57,10 +58,10 @@ namespace redux {
     bool has_data;
   };
 #pragma pack(pop)
-  constexpr std::uint16_t TopBit(std::uint16_t a) {
-    std::uint16_t b = (a > 0) ? 1 : 0;
-    while (b < a) b *= 2;
-    return b;
+  constexpr std::uint32_t TopBit(std::uint32_t size) {
+    std::uint32_t power = (size > 0) ? 1 : 0;
+    while (power < size) power *= 2;
+    return power;
   }
   constexpr std::uint32_t getImageSize(std::int32_t format, std::int32_t mipmapcount, std::int32_t width,
                                        std::int32_t height) {
@@ -80,11 +81,11 @@ namespace redux {
           break;
         case 5:
         case 6:  // DDS
-          imagesize += 2 * std::max(width, 4) * std::max(height, 4) / 2;
+          imagesize += std::max(width, 4) * std::max(height, 4) / 2;
           break;
         case 7:
         case 8:
-          imagesize += 2 * std::max(width, 4) * std::max(height, 4);
+          imagesize += std::max(width, 4) * std::max(height, 4);
           break;
       }
     }
@@ -175,6 +176,8 @@ namespace redux {
   bool init() {
     static bool initialized = false;
     static DLLWrapper dll("redux_runtime.dll");
+    static std::mutex mutex;
+    std::lock_guard<std::mutex> l(mutex);
     if (initialized || !dll) return dll;
     redux::handleDecompress = dll.get<redux::t_HandleDecompress>("reduxHandleDecompress");
     redux::callbackSet = dll.get<redux::t_CallbackSet>("reduxCallbackSet");
