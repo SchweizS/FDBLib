@@ -1,6 +1,7 @@
 #pragma once
 #include "NormalFile.hpp"
 namespace fdb {
+  extern bool initRedux(const char* path=nullptr);
   class ImageFile : public NormalFile {
   public:
 #pragma pack(push, 4)

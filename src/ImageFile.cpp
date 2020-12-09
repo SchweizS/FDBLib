@@ -1,9 +1,8 @@
 #include "ImageFile.hpp"
-
+#include <filesystem>
 #include <cstdint>
 #include <exception>
 #include <fstream>
-#include <mutex>
 
 #include "impl/base.hpp"
 
@@ -17,8 +16,10 @@ namespace {
     Signature get(const char* name) {
       return (Signature)GetProcAddress(mDLL, name);
     }
+    DLLWrapper() = default;
     explicit DLLWrapper(const char* file) { load(file); }
     bool load(const char* file) {
+      release();
       mDLL = LoadLibraryA(file);
       return mDLL != nullptr;
     }
@@ -32,6 +33,9 @@ namespace {
 
     HMODULE mDLL;
   };
+
+  DLLWrapper gReduxDll;
+  DLLWrapper gNVTTDll;
 }  // namespace
 namespace redux {
 #pragma pack(push, 4)
@@ -173,26 +177,9 @@ namespace redux {
     }
   }
 
-  bool init() {
-    static bool initialized = false;
-    static DLLWrapper dll("redux_runtime.dll");
-    static std::mutex mutex;
-    std::lock_guard<std::mutex> l(mutex);
-    if (initialized || !dll) return dll;
-    redux::handleDecompress = dll.get<redux::t_HandleDecompress>("reduxHandleDecompress");
-    redux::callbackSet = dll.get<redux::t_CallbackSet>("reduxCallbackSet");
-    redux::handleGetOutputDesc = dll.get<redux::t_HandleGetOutputDesc>("reduxHandleGetOutputDesc");
-    if (!redux::handleDecompress || !redux::callbackSet || !redux::handleGetOutputDesc) {
-      dll.release();
-      return false;
-    }
-    redux::callbackSet(7, (void*)&redux::CallbackOnComplete);
-    redux::callbackSet(6, (void*)&redux::CallbackBuffer);
-    return true;
-  }
   // "redux_runtime.dll"
   bool decompress(std::vector<char>& data, fdb::ImageFile* img) {
-    if (!init()) {
+    if (!gReduxDll) {
       return false;
     }
     redux::DATA reduxData;
@@ -400,6 +387,35 @@ namespace helper {
 }  // namespace helper
 
 namespace fdb {
+  bool initRedux(const char* path) {
+    if (gReduxDll) return gReduxDll;
+    if (path!=nullptr) {
+      std::filesystem::path p(path);
+      if (gNVTTDll.load((p / "redux_nvtt.dll").string().c_str())) {
+        gReduxDll.load((p / "redux_runtime.dll").string().c_str());
+      }
+    } 
+    if (!gReduxDll) {
+      if (gNVTTDll.load( "redux_nvtt.dll")) {
+        gReduxDll.load("redux_runtime.dll");
+      }
+    }
+    if (!gReduxDll) {
+      gNVTTDll.release();
+      return false;
+    }
+    redux::handleDecompress = gReduxDll.get<redux::t_HandleDecompress>("reduxHandleDecompress");
+    redux::callbackSet = gReduxDll.get<redux::t_CallbackSet>("reduxCallbackSet");
+    redux::handleGetOutputDesc = gReduxDll.get<redux::t_HandleGetOutputDesc>("reduxHandleGetOutputDesc");
+    if (!redux::handleDecompress || !redux::callbackSet || !redux::handleGetOutputDesc) {
+      gReduxDll.release();
+      gNVTTDll.release();
+      return false;
+    }
+    redux::callbackSet(7, (void*)&redux::CallbackOnComplete);
+    redux::callbackSet(6, (void*)&redux::CallbackBuffer);
+    return true;
+  };
   bool ImageFile::decompress() {
     if (mCompression == Compression::redux) {
       if (!redux::decompress(mData, this)) return false;
