@@ -1,11 +1,12 @@
 #pragma once
 #include <vector>
-
+#include <string>
 #include "base.hpp"
 
 namespace fdb {
   class NormalFile {
   public:
+    virtual ~NormalFile() = default;
     // THIS IS NOT THREADSAFE!
     virtual bool decompress();
     virtual bool compress(Compression);
